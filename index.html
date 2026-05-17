@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Guessing Game</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        button { background: #007bff; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        input { padding: 7px; margin-right: 5px; }
+        ul { list-style: none; padding: 0; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Guess the Number (1-100)</h2>
+    <p id="feedback">Enter a guess to start!</p>
+    <input type="number" id="guessInput" min="1" max="100">
+    <button onclick="checkGuess()">Guess</button>
+
+    <h3>Top 5 Leaderboard</h3>
+    <ul id="leaderboard"></ul>
+</div>
+
+<script>
+    // Generate secret number and setup tracking
+    const secretCode = Math.floor(Math.random() * 100) + 1;
+    let attempts = 0;
+
+    // Fetch and display current scores when page loads
+    async function loadLeaderboard() {
+        const res = await fetch('http://127.0.0');
+        const data = await res.json();
+        updateLeaderboardView(data.leaderboard);
+    }
+
+    function checkGuess() {
+        const guess = parseInt(document.getElementById('guessInput').value);
+        const feedback = document.getElementById('feedback');
+        attempts++;
+
+        if (guess === secretCode) {
+            feedback.innerHTML = `🎉 Correct! You took ${attempts} tries.`;
+            saveScore(attempts);
+        } else if (guess > secretCode) {
+            feedback.innerText = "Too high! Try again.";
+        } else {
+            feedback.innerText = "Too low! Try again.";
+        }
+    }
+
+    async function saveScore(score) {
+        const name = prompt("You won! Enter your name for the leaderboard:") || "Anonymous";
+        
+        // Send data to the Python backend
+        const response = await fetch('http://127.0.0', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, score: score })
+        });
+        const data = await response.json();
+        updateLeaderboardView(data.leaderboard);
+    }
+
+    function updateLeaderboardView(list) {
+        const ul = document.getElementById('leaderboard');
+        ul.innerHTML = list.map(player => `<li>${player.name}: ${player.score} tries</li>`).join('');
+    }
+
+    loadLeaderboard();
+</script>
+</body>
+</html>
